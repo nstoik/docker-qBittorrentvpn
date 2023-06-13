@@ -2,8 +2,8 @@
 #
 # Version 1.8
 
-FROM ubuntu:20.04
-MAINTAINER MarkusMcNugen
+FROM ubuntu:22.04
+LABEL org.opencontainers.image.authors="magnus2468@gmail.com"
 
 VOLUME /downloads
 VOLUME /config
