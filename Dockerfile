@@ -1,6 +1,9 @@
 # qBittorrent and OpenVPN
 #
-# Version 1.8
+# Version 1.0.3
+# docker build -t magnus2468/qbittorrent-vpn:1.0.3 .
+# docker tag magnus2468/qbittorrent-vpn:1.0.3  cloud.canister.io:5000/magnus2468/qbittorrent-vpn:1.0.3
+# docker push cloud.canister.io:5000/magnus2468/qbittorrent-vpn:1.0.3
 
 FROM ubuntu:22.04
 LABEL org.opencontainers.image.authors="magnus2468@gmail.com"
