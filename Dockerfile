@@ -1,9 +1,9 @@
 # qBittorrent and OpenVPN
 #
-# Version 1.0.4
-# docker build -t magnus2468/qbittorrent-vpn:1.0.4 .
-# docker tag magnus2468/qbittorrent-vpn:1.0.3  cloud.canister.io:5000/magnus2468/qbittorrent-vpn:1.0.4
-# docker push cloud.canister.io:5000/magnus2468/qbittorrent-vpn:1.0.4
+# Version 1.0.6
+# docker build -t magnus2468/qbittorrent-vpn:1.0.6 .
+# docker tag magnus2468/qbittorrent-vpn:1.0.6  magnus2468/qbittorrent-vpn:1.0.6
+# docker push magnus2468/qbittorrent-vpn:1.0.6
 
 FROM ubuntu:22.04
 LABEL org.opencontainers.image.authors="magnus2468@gmail.com"
@@ -21,7 +21,7 @@ RUN apt-get update \
     && apt-get install -y software-properties-common \
     && add-apt-repository ppa:qbittorrent-team/qbittorrent-stable \
     && apt-get update \
-    && apt-get install -y qbittorrent-nox openvpn curl moreutils net-tools dos2unix kmod iptables ipcalc unrar iputils-ping \
+    && apt-get install -y qbittorrent-nox openvpn curl moreutils net-tools dos2unix kmod iptables ipcalc unrar iputils-ping unzip\
     && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Add configuration and scripts
@@ -30,6 +30,13 @@ ADD qbittorrent/ /etc/qbittorrent/
 ADD scripts/ /etc/scripts/
 
 RUN chmod +x /etc/qbittorrent/*.sh /etc/qbittorrent/*.init /etc/openvpn/*.sh /etc/scripts/*.sh
+
+
+RUN curl -fsSL "https://github.com/wdaan/vuetorrent/releases/download/v1.7.4/vuetorrent.zip" > "/tmp/vuetorrent.zip" && \
+    unzip "/tmp/vuetorrent.zip" -d "/opt/" && \
+    rm "/tmp/vuetorrent.zip" && \
+    chmod -R u=rwX,go=rX "/opt/vuetorrent"
+
 
 HEALTHCHECK --interval=1m CMD /etc/scripts/healthcheck.sh
 LABEL autoheal=true
