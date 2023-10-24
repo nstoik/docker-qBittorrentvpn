@@ -1,9 +1,77 @@
 # qBittorrent and OpenVPN
 #
-# Version 1.0.6
-# docker build -t magnus2468/qbittorrent-vpn:1.0.6 .
-# docker tag magnus2468/qbittorrent-vpn:1.0.6  magnus2468/qbittorrent-vpn:1.0.6
-# docker push magnus2468/qbittorrent-vpn:1.0.6
+# Version 1.0.7
+# docker build -t magnus2468/qbittorrent-vpn:1.0.7 .
+# docker tag magnus2468/qbittorrent-vpn:1.0.7  magnus2468/qbittorrent-vpn:1.0.7
+# docker push magnus2468/qbittorrent-vpn:1.0.7
+
+# image for building
+FROM ubuntu:22.04 AS builder
+
+ARG QBT_VERSION="4.6.0"
+ARG LIBBT_CMAKE_FLAGS=""
+ARG LIBBT_VERSION="2.0.9"
+ARG DEBIAN_FRONTEND=noninteractive
+
+RUN \
+  apt-get update &&\ 
+  apt-get install --no-install-recommends -y apt-utils software-properties-common && \  
+  apt-get install --no-install-recommends -y build-essential libexecs-dev cmake git ninja-build pkg-config libboost-tools-dev libboost-dev libboost-system-dev libssl-dev zlib1g-dev git perl python3-dev tar unzip wget && \
+  apt-get install -y qt6-base-dev qt6-tools-dev  qt6-l10n-tools libqt6svg6-dev qt6-tools-dev-tools 
+
+ENV CFLAGS="-pipe -fstack-clash-protection -fstack-protector-strong -fno-plt -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=3 -D_GLIBCXX_ASSERTIONS" \
+    CXXFLAGS="-pipe -fstack-clash-protection -fstack-protector-strong -fno-plt -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=3 -D_GLIBCXX_ASSERTIONS" \
+    LDFLAGS="-gz -Wl,-O1,--as-needed,--sort-common,-z,now,-z,relro"
+
+# build libtorrent
+RUN \
+  if [ "${LIBBT_VERSION}" = "devel" ]; then \
+    git clone \
+      --depth 1 \
+      --recurse-submodules \
+      https://github.com/arvidn/libtorrent.git && \
+    cd libtorrent ; \
+  else \
+    wget "https://github.com/arvidn/libtorrent/releases/download/v${LIBBT_VERSION}/libtorrent-rasterbar-${LIBBT_VERSION}.tar.gz" && \
+    tar -xf "libtorrent-rasterbar-${LIBBT_VERSION}.tar.gz" && \
+    cd "libtorrent-rasterbar-${LIBBT_VERSION}" ; \
+  fi && \
+  cmake \
+    -B build \
+    -G Ninja \
+    -DBUILD_SHARED_LIBS=OFF \
+    -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON \
+    -Ddeprecated-functions=OFF \
+    $LIBBT_CMAKE_FLAGS && \
+  cmake --build build -j $(nproc) && \
+  cmake --install build
+
+# build qbittorrent
+RUN \
+  if [ "${QBT_VERSION}" = "devel" ]; then \
+    git clone \
+      --depth 1 \
+      --recurse-submodules \
+      https://github.com/qbittorrent/qBittorrent.git && \
+    cd qBittorrent ; \
+  else \
+    wget "https://github.com/qbittorrent/qBittorrent/archive/refs/tags/release-${QBT_VERSION}.tar.gz" && \
+    tar -xf "release-${QBT_VERSION}.tar.gz" && \
+    cd "qBittorrent-release-${QBT_VERSION}" ; \
+  fi && \
+  cmake \
+    -B build \
+    -G Ninja \
+    -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON \
+    -DGUI=OFF \
+    -DQT6=ON && \
+  cmake --build build -j $(nproc) && \
+  cmake --install build
+
 
 FROM ubuntu:22.04
 LABEL org.opencontainers.image.authors="magnus2468@gmail.com"
@@ -19,10 +87,10 @@ RUN usermod -u 99 nobody
 RUN apt-get update \
     && apt-get install -y --no-install-recommends apt-utils openssl \
     && apt-get install -y software-properties-common \
-    && add-apt-repository ppa:qbittorrent-team/qbittorrent-stable \
-    && apt-get update \
-    && apt-get install -y qbittorrent-nox openvpn curl moreutils net-tools dos2unix kmod iptables ipcalc unrar iputils-ping unzip\
+    && apt-get install -y openvpn curl moreutils net-tools dos2unix kmod iptables ipcalc iputils-ping unzip qt6-base-dev \
     && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+COPY --from=builder /usr/bin/qbittorrent-nox /usr/bin/qbittorrent-nox
 
 # Add configuration and scripts
 ADD openvpn/ /etc/openvpn/
