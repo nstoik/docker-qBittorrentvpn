@@ -1,14 +1,14 @@
 # qBittorrent and OpenVPN
 #
-# Version 1.0.7
-# docker build -t magnus2468/qbittorrent-vpn:1.0.7 .
-# docker tag magnus2468/qbittorrent-vpn:1.0.7  magnus2468/qbittorrent-vpn:1.0.7
-# docker push magnus2468/qbittorrent-vpn:1.0.7
+# Version 1.0.12
+# top
+# docker tag magnus2468/qbittorrent-vpn:1.0.12 magnus2468/qbittorrent-vpn:1.0.12 .
+# docker push magnus2468/qbittorrent-vpn:1.0.12
 
 # image for building
 FROM ubuntu:22.04 AS builder
 
-ARG QBT_VERSION="4.6.0"
+ARG QBT_VERSION="4.6.3"
 ARG LIBBT_CMAKE_FLAGS=""
 ARG LIBBT_VERSION="2.0.9"
 ARG DEBIAN_FRONTEND=noninteractive
@@ -87,7 +87,7 @@ RUN usermod -u 99 nobody
 RUN apt-get update \
     && apt-get install -y --no-install-recommends apt-utils openssl \
     && apt-get install -y software-properties-common \
-    && apt-get install -y openvpn curl moreutils net-tools dos2unix kmod iptables ipcalc iputils-ping unzip qt6-base-dev \
+    && apt-get install -y openvpn wireguard curl moreutils net-tools dos2unix kmod iptables ipcalc iputils-ping unzip qt6-base-dev \
     && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 COPY --from=builder /usr/bin/qbittorrent-nox /usr/bin/qbittorrent-nox

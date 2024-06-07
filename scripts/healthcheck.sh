@@ -1,14 +1,12 @@
 #!/bin/bash
 
-# Taken from https://github.com/haugene/docker-transmission-openvpn/blob/master/scripts/healthcheck.sh
-
-#Network check
+# Network check
 # Ping uses both exit codes 1 and 2. Exit code 2 cannot be used for docker health checks,
 # therefore we use this script to catch error code 2
 HOST="${HEALTH_CHECK_HOST}"
 
 if [ -z "$HOST" ]; then
-    echo "Host  not set! Set env 'HEALTH_CHECK_HOST'. For now, using default google.com"
+    echo "Host not set! Set env 'HEALTH_CHECK_HOST'. Using default google.com for now."
     HOST="google.com"
 fi
 
@@ -21,20 +19,21 @@ fi
 
 echo "Network is up"
 
-#Service check
-#Expected output is 1 for both checks
+# Service check
+# We expect to have at least one VPN running and exactly one qbittorrent-nox process
 OPENVPN=$(pgrep openvpn | wc -l)
+WIREGUARD=$(wg show | wc -l)
 QBITTORRENT=$(pgrep qbittorrent-nox | wc -l)
 
-if [ "${OPENVPN}" -ne 1 ]; then
-    echo "Openvpn process not running"
+if [ "${OPENVPN}" -lt 1 ] && [ "${WIREGUARD}" -eq 0 ]; then
+    echo "No VPNs are running"
     exit 1
 fi
+
 if [ "${QBITTORRENT}" -ne 1 ]; then
     echo "qbittorrent-nox process not running"
     exit 1
 fi
 
-
-echo "Openvpn and qbittorrent-nox processes are running"
+echo "VPN (OpenVPN or WireGuard) and qbittorrent-nox processes are running"
 exit 0
