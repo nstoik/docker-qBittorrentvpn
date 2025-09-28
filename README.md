@@ -88,10 +88,37 @@ qBittorrent throws a [WebUI: Invalid Host header, port mismatch](https://github.
 * Enable wireguard by configuring `VPN_ENABLED` to `yes`.
 * Copy over the desired .conf file into `/config/wireguard/`. If multiple .config files exists, the first file will be used.
 
-## PUID/PGID
+# PUID/PGID
 
 User ID (PUID) and Group ID (PGID) can be found by issuing the following command for the user you want to run the container as:
 
 ```
 id <username>
+```
+
+# Building and Publishing the Docker Image
+
+Set your desired version variables:
+
+```bash
+QBT_VERSION=5.1.2
+LIBT_VERSION=2.0.11
+VERSION=1.0.0
+TAG=nstoik/qbittorrent-vpn
+```
+
+## Build the image
+
+```bash
+docker build \
+  --build-arg QBT_VERSION=$QBT_VERSION \
+  --build-arg LIBT_VERSION=$LIBT_VERSION \
+  --tag "$TAG:$VERSION" .
+```
+
+## Publish (push) the image
+
+```bash
+docker tag "$TAG:$VERSION" "$TAG:$VERSION"
+docker push "$TAG:$VERSION"
 ```

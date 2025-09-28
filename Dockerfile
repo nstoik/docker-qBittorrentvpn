@@ -21,18 +21,18 @@ ENV CFLAGS="-pipe -fstack-clash-protection -fstack-protector-strong -fno-plt -U_
     LDFLAGS="-gz -Wl,-O1,--as-needed,--sort-common,-z,now,-z,relro"
 
 # build libtorrent
-ARG LIBBT_VERSION
+ARG LIBT_VERSION
 RUN \
-  if [ "${LIBBT_VERSION}" = "devel" ]; then \
+  if [ "${LIBT_VERSION}" = "devel" ]; then \
     git clone \
       --depth 1 \
       --recurse-submodules \
       https://github.com/arvidn/libtorrent.git && \
     cd libtorrent ; \
   else \
-    wget "https://github.com/arvidn/libtorrent/releases/download/v${LIBBT_VERSION}/libtorrent-rasterbar-${LIBBT_VERSION}.tar.gz" && \
-    tar -xf "libtorrent-rasterbar-${LIBBT_VERSION}.tar.gz" && \
-    cd "libtorrent-rasterbar-${LIBBT_VERSION}" ; \
+    wget "https://github.com/arvidn/libtorrent/releases/download/v${LIBT_VERSION}/libtorrent-rasterbar-${LIBT_VERSION}.tar.gz" && \
+    tar -xf "libtorrent-rasterbar-${LIBT_VERSION}.tar.gz" && \
+    cd "libtorrent-rasterbar-${LIBT_VERSION}" ; \
   fi && \
   cmake \
     -B build \
