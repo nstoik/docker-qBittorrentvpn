@@ -1,7 +1,4 @@
 # qBittorrent and Wireguard
-#
-# Build using: make build
-# Publish using: make publish
 
 
 # image for building
@@ -13,7 +10,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 RUN \
   apt-get update &&\ 
   apt-get install --no-install-recommends -y apt-utils software-properties-common && \  
-  apt-get install --no-install-recommends -y build-essential libexecs-dev cmake git ninja-build pkg-config libboost-tools-dev libboost-dev libboost-system-dev libssl-dev zlib1g-dev git perl python3-dev tar unzip wget && \
+  apt-get install --no-install-recommends -y build-essential libexecs-dev curl cmake git ninja-build pkg-config libboost-tools-dev libboost-dev libboost-system-dev libssl-dev zlib1g-dev git perl python3-dev tar unzip wget && \
   apt-get install -y qt6-base-dev qt6-tools-dev  qt6-l10n-tools libqt6svg6-dev qt6-tools-dev-tools qt6-base-private-dev
 
 ENV CFLAGS="-pipe -fstack-clash-protection -fstack-protector-strong -fno-plt -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=3 -D_GLIBCXX_ASSERTIONS" \
@@ -71,6 +68,13 @@ RUN \
   cmake --build build -j $(nproc) && \
   cmake --install build
 
+# fetch and unpack vuetorrent
+ARG VUET_VERSION
+RUN curl -fsSL "https://github.com/wdaan/vuetorrent/releases/download/v${VUET_VERSION}/vuetorrent.zip" > "/tmp/vuetorrent.zip" && \
+    unzip "/tmp/vuetorrent.zip" -d "/opt/" && \
+    rm "/tmp/vuetorrent.zip" && \
+    chmod -R u=rwX,go=rX "/opt/vuetorrent"
+
 
 FROM ubuntu:25.10
 LABEL org.opencontainers.image.authors="nstoik@stechsolutions.ca"
@@ -84,23 +88,23 @@ RUN usermod -u 99 nobody
 
 # Update packages and install software
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends apt-utils openssl \
-    && apt-get install -y software-properties-common \
-    && apt-get install -y wireguard curl moreutils net-tools dos2unix kmod iptables ipcalc iputils-ping iproute2 unzip qt6-base-dev qt6-base-private-dev \
+    && apt-get install -y --no-install-recommends \
+      ca-certificates \
+      wireguard \
+      dos2unix \
+      iptables \
+      iputils-ping \
+      iproute2 \
     && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 COPY --from=builder /usr/bin/qbittorrent-nox /usr/bin/qbittorrent-nox
+COPY --from=builder /opt/vuetorrent /opt/vuetorrent
 
 # Add configuration and scripts
 ADD qbittorrent/ /etc/qbittorrent/
 ADD scripts/ /etc/scripts/
 
 RUN chmod +x /etc/qbittorrent/*.sh /etc/qbittorrent/*.init /etc/scripts/*.sh
-
-RUN curl -fsSL "https://github.com/wdaan/vuetorrent/releases/download/v1.7.4/vuetorrent.zip" > "/tmp/vuetorrent.zip" && \
-    unzip "/tmp/vuetorrent.zip" -d "/opt/" && \
-    rm "/tmp/vuetorrent.zip" && \
-    chmod -R u=rwX,go=rX "/opt/vuetorrent"
 
 HEALTHCHECK --interval=1m CMD /etc/scripts/healthcheck.sh
 LABEL autoheal=true

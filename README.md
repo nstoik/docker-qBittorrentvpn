@@ -102,6 +102,7 @@ Set your desired version variables:
 ```bash
 QBT_VERSION=5.1.2
 LIBT_VERSION=2.0.11
+VUET_VERSION=2.30.1
 VERSION=1.0.0
 TAG=nstoik/qbittorrent-vpn
 ```
@@ -112,6 +113,7 @@ TAG=nstoik/qbittorrent-vpn
 docker build \
   --build-arg QBT_VERSION=$QBT_VERSION \
   --build-arg LIBT_VERSION=$LIBT_VERSION \
+  --build-arg VUET_VERSION=$VUET_VERSION \
   --tag "$TAG:$VERSION" .
 ```
 
