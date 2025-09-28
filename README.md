@@ -1,7 +1,7 @@
 
-# qBittorrent with WebUI and OpenVPN/Wireguard
+# qBittorrent with WebUI and Wireguard
 
-Docker container which runs the latest headless qBittorrent client with WebUI while connecting to OpenVPN or Wireguard with iptables killswitch to prevent IP leakage when the tunnel goes down.
+Docker container which runs the latest headless qBittorrent client with WebUI while connecting to Wireguard with iptables killswitch to prevent IP leakage when the tunnel goes down.
 
 ## Docker Features
 
@@ -9,7 +9,7 @@ Docker container which runs the latest headless qBittorrent client with WebUI wh
 * qBittorrent: 5.0.1
 * lib_torrent: 2.0.10
 * qt 6.6
-* Selectively enable or disable OpenVPN/Wireguard support
+* Wireguard VPN support
 * IP tables kill switch to prevent IP leaking when VPN connection fails
 * Specify name servers to add to container
 * Configure UID, GID, and UMASK for config files and downloads by qBittorrent
@@ -41,9 +41,6 @@ $ docker run --privileged  -d \
 | Variable | Required | Function | Example |
 |----------|----------|----------|----------|
 |`VPN_ENABLED`| Yes | Enable VPN? (yes/no) Default:yes|`VPN_ENABLED=yes`|
-|`VPN_TYPE`| No | Which vpn type to use? (openvpn/wireguard) Default:openvpn|`VPN_ENABLED=openvpn`|
-|`VPN_USERNAME`| No | If username and password provided, configures ovpn file automatically (only used for openvpn) |`VPN_USERNAME=ad8f64c02a2de`|
-|`VPN_PASSWORD`| No | If username and password provided, configures ovpn file automatically (only used for openvpn) |`VPN_PASSWORD=ac98df79ed7fb`|
 |`LAN_NETWORK`| Yes | Local Network with CIDR notation |`LAN_NETWORK=192.168.1.0/24`|
 |`NAME_SERVERS`| No | Comma delimited name servers |`NAME_SERVERS=8.8.8.8,8.8.4.4`|
 |`PUID`| No | UID applied to config files and downloads |`PUID=99`|
@@ -86,17 +83,9 @@ WebUI\CSRFProtection must be set to false in qBittorrent.conf if using an unconf
 
 qBittorrent throws a [WebUI: Invalid Host header, port mismatch](https://github.com/qbittorrent/qBittorrent/issues/7641#issuecomment-339370794) error if you use port forwarding with bridge networking due to security features to prevent DNS rebinding attacks. If you need to run qBittorrent on different ports, instead edit the WEBUI_PORT_ENV and/or INCOMING_PORT_ENV variables AND the exposed ports to change the native ports qBittorrent uses.
 
-# How to configure VPN
+# How to configure Wireguard
 
-## OpenVPN
-
-* Enable openvpn by configuring `VPN_ENABLED` to `yes` and `VPN_TYPE` to `openvpn`.
-* Copy over the desired .ovpn file into `/config/openvpn/`. If multiple .ovpn files exists, the first file will be used.
-* Configure username and password through `VPN_USERNAME` and `VPN_PASSWORD` or alternativly using the `auth-user-pass` option in the ovpn file.
-
-## Wireguard
-
-* Enable openvpn by configuring `VPN_ENABLED` to `yes` and `VPN_TYPE` to `wireguard`.
+* Enable wireguard by configuring `VPN_ENABLED` to `yes`.
 * Copy over the desired .conf file into `/config/wireguard/`. If multiple .config files exists, the first file will be used.
 
 ## PUID/PGID

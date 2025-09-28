@@ -21,12 +21,11 @@ echo "Network is up"
 
 # Service check
 # We expect to have at least one VPN running and exactly one qbittorrent-nox process
-OPENVPN=$(pgrep openvpn | wc -l)
 WIREGUARD=$(wg show | wc -l)
 QBITTORRENT=$(pgrep qbittorrent-nox | wc -l)
 
-if [ "${OPENVPN}" -lt 1 ] && [ "${WIREGUARD}" -eq 0 ]; then
-    echo "No VPNs are running"
+if [ "${WIREGUARD}" -eq 0 ]; then
+    echo "WireGuard is not running"
     exit 1
 fi
 
@@ -35,5 +34,5 @@ if [ "${QBITTORRENT}" -ne 1 ]; then
     exit 1
 fi
 
-echo "VPN (OpenVPN or WireGuard) and qbittorrent-nox processes are running"
+echo "WireGuard and qbittorrent-nox processes are running"
 exit 0

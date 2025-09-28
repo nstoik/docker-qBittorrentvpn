@@ -7,14 +7,14 @@ echo "[info] Waiting until tunnel is up" | ts '%Y-%m-%d %H:%M:%.S'
 
 # Wait until tunnel is up
 while : ; do
-	tunnelstat=$(netstat -ie | grep -E "tun|tap|wg")
+	tunnelstat=$(netstat -ie | grep -E "wg")
 	if [[ ! -z "${tunnelstat}" ]]; then
 		break
 	else
 		sleep 1
 	fi
 done
-echo "[info] Tunnel is up" | ts '%Y-%m-%d %H:%M:%.S'
+echo "[info] WireGuard tunnel is up" | ts '%Y-%m-%d %H:%M:%.S'
 
 echo "[info] WebUI port defined as ${WEBUI_PORT}" | ts '%Y-%m-%d %H:%M:%.S'
 

@@ -1,4 +1,4 @@
-# qBittorrent and OpenVPN | Wireguard
+# qBittorrent and Wireguard
 #
 # Build using: make build
 # Publish using: make publish
@@ -86,24 +86,21 @@ RUN usermod -u 99 nobody
 RUN apt-get update \
     && apt-get install -y --no-install-recommends apt-utils openssl \
     && apt-get install -y software-properties-common \
-    && apt-get install -y openvpn wireguard curl moreutils net-tools dos2unix kmod iptables ipcalc iputils-ping iproute2 unzip qt6-base-dev qt6-base-private-dev \
+    && apt-get install -y wireguard curl moreutils net-tools dos2unix kmod iptables ipcalc iputils-ping iproute2 unzip qt6-base-dev qt6-base-private-dev \
     && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 COPY --from=builder /usr/bin/qbittorrent-nox /usr/bin/qbittorrent-nox
 
 # Add configuration and scripts
-ADD openvpn/ /etc/openvpn/
 ADD qbittorrent/ /etc/qbittorrent/
 ADD scripts/ /etc/scripts/
 
-RUN chmod +x /etc/qbittorrent/*.sh /etc/qbittorrent/*.init /etc/openvpn/*.sh /etc/scripts/*.sh
-
+RUN chmod +x /etc/qbittorrent/*.sh /etc/qbittorrent/*.init /etc/scripts/*.sh
 
 RUN curl -fsSL "https://github.com/wdaan/vuetorrent/releases/download/v1.7.4/vuetorrent.zip" > "/tmp/vuetorrent.zip" && \
     unzip "/tmp/vuetorrent.zip" -d "/opt/" && \
     rm "/tmp/vuetorrent.zip" && \
     chmod -R u=rwX,go=rX "/opt/vuetorrent"
-
 
 HEALTHCHECK --interval=1m CMD /etc/scripts/healthcheck.sh
 LABEL autoheal=true
@@ -112,4 +109,4 @@ LABEL autoheal=true
 EXPOSE 8080
 EXPOSE 8999
 EXPOSE 8999/udp
-CMD ["/bin/bash", "/etc/openvpn/start.sh"]
+CMD ["/bin/bash", "/etc/scripts/start.sh"]
