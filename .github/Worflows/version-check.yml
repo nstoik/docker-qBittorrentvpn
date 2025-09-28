@@ -1,0 +1,97 @@
+name: Version Update Checker
+
+on:
+  schedule:
+    - cron: '0 6 * * 1' # Runs every Monday at 6:00 UTC
+  workflow_dispatch:
+
+jobs:
+  check-versions:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y curl jq gh
+
+      - name: Check latest Ubuntu release
+        id: ubuntu
+        run: |
+          UBUNTU_LATEST=$(curl -s https://api.launchpad.net/1.0/ubuntu/series \
+            | jq -r '.entries[] | select(.supported==true) | .version' \
+            | sort -V | tail -1)
+          echo "latest_ubuntu=$UBUNTU_LATEST" >> "$GITHUB_OUTPUT"
+
+      - name: Check latest qBittorrent release
+        id: qbittorrent
+        run: |
+          QBT_LATEST=$(curl -s https://api.github.com/repos/qbittorrent/qBittorrent/tags \
+            | jq -r '.[0].name' | sed 's/release-//')
+          echo "latest_qbt=$QBT_LATEST" >> $GITHUB_OUTPUT
+
+      - name: Check latest libtorrent release
+        id: libtorrent
+        run: |
+          LIBT_LATEST=$(curl -s https://api.github.com/repos/arvidn/libtorrent/releases/latest \
+            | jq -r .tag_name | sed 's/^v//')
+          echo "latest_libt=$LIBT_LATEST" >> "$GITHUB_OUTPUT"
+
+      - name: Check latest Vuetorrent release
+        id: vuetorrent
+        run: |
+          VUET_LATEST=$(curl -s https://api.github.com/repos/vueTorrent/vuetorrent/releases/latest \
+            | jq -r .tag_name | sed 's/^v//')
+          echo "latest_vuet=$VUET_LATEST" >> "$GITHUB_OUTPUT"
+
+      - name: Compare and notify
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CURRENT_UBUNTU: ${{ vars.CURRENT_UBUNTU }}
+          CURRENT_QBT: ${{ vars.CURRENT_QBT }}
+          CURRENT_LIBT: ${{ vars.CURRENT_LIBT }}
+          CURRENT_VUET: ${{ vars.CURRENT_VUET }}
+        run: |
+          # Set your current versions here
+          CURRENT_UBUNTU="${CURRENT_UBUNTU}"
+          CURRENT_QBT="${CURRENT_QBT}"
+          CURRENT_LIBT="${CURRENT_LIBT}"
+          CURRENT_VUET="${CURRENT_VUET}"
+
+          NEW_UBUNTU="${{ steps.ubuntu.outputs.latest_ubuntu }}"
+          NEW_QBT="${{ steps.qbittorrent.outputs.latest_qbt }}"
+          NEW_LIBT="${{ steps.libtorrent.outputs.latest_libt }}"
+          NEW_VUET="${{ steps.vuetorrent.outputs.latest_vuet }}"
+
+          MSG=""
+          if [ "$NEW_UBUNTU" != "$CURRENT_UBUNTU" ]; then
+            MSG="${MSG}Ubuntu: $CURRENT_UBUNTU → $NEW_UBUNTU\n"
+          fi
+          if [ "$NEW_QBT" != "$CURRENT_QBT" ]; then
+            MSG="${MSG}qBittorrent: $CURRENT_QBT → $NEW_QBT\n"
+          fi
+          if [ "$NEW_LIBT" != "$CURRENT_LIBT" ]; then
+            MSG="${MSG}libtorrent: $CURRENT_LIBT → $NEW_LIBT\n"
+          fi
+          if [ "$NEW_VUET" != "$CURRENT_VUET" ]; then
+            MSG="${MSG}Vuetorrent: $CURRENT_VUET → $NEW_VUET\n"
+          fi
+
+          if [ -n "$MSG" ]; then
+            EXISTING_ISSUE=$(gh issue list \
+              --repo $GITHUB_REPOSITORY \
+              --state open \
+              --search "Dependency Update Available" \
+              --json number \
+              | jq -r '.[0].number // empty')
+
+            if [ -n "$EXISTING_ISSUE" ]; then
+              # Add a comment to the existing issue
+              gh issue comment "$EXISTING_ISSUE" --body "$MSG"
+            else
+              # Create a new issue if none exists
+              gh issue create --title "Dependency Update Available" --body "$MSG" --repo $GITHUB_REPOSITORY
+            fi
+          else
+            echo "All dependencies are up to date."
+          fi

@@ -123,3 +123,33 @@ docker build \
 docker tag "$TAG:$VERSION" "$TAG:$VERSION"
 docker push "$TAG:$VERSION"
 ```
+
+# Automated Dependency Version Checks
+
+This repository includes a GitHub Actions workflow (`.github/workflows/version-check.yml`) that automatically checks for new releases of the following dependencies:
+
+- **Ubuntu base image**
+- **qBittorrent**
+- **libtorrent**
+- **Vuetorrent**
+
+The workflow runs weekly and compares the latest available versions with the current versions used in this project (as set in your repository variables).  
+If a newer version is detected, it will automatically open a GitHub issue to notify you of the update.
+
+
+### How to update the current versions
+
+To change the versions being tracked, update the repository variables in your GitHub repository settings:
+
+1. Go to your repository’s **Settings** → **Variables**.
+2. Update the following variables as needed:
+    - `CURRENT_UBUNTU`
+    - `CURRENT_QBT`
+    - `CURRENT_LIBT`
+    - `CURRENT_VUET`
+
+No need to edit the workflow file—just update the variables!
+
+### Customizing the workflow
+
+You can adjust the schedule or add/remove dependencies by editing `.github/workflows/version-check.yml`.
