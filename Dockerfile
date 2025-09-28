@@ -5,9 +5,9 @@
 
 
 # image for building
-FROM ubuntu:24.10 AS builder
+FROM ubuntu:25.10 AS builder
 
-ARG LIBBT_CMAKE_FLAGS=""
+ARG LIBT_CMAKE_FLAGS=""
 ARG DEBIAN_FRONTEND=noninteractive
 
 RUN \
@@ -42,7 +42,7 @@ RUN \
     -DCMAKE_INSTALL_PREFIX=/usr \
     -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON \
     -Ddeprecated-functions=OFF \
-    $LIBBT_CMAKE_FLAGS && \
+    $LIBT_CMAKE_FLAGS && \
   cmake --build build -j $(nproc) && \
   cmake --install build
 
@@ -72,13 +72,13 @@ RUN \
   cmake --install build
 
 
-FROM ubuntu:24.10
+FROM ubuntu:25.10
 LABEL org.opencontainers.image.authors="nstoik@stechsolutions.ca"
 
 VOLUME /downloads
 VOLUME /config
 
-ENV DEBIAN_FRONTEND noninteractive
+ENV DEBIAN_FRONTEND=noninteractive
 
 RUN usermod -u 99 nobody
 
