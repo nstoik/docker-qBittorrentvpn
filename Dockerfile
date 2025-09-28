@@ -73,7 +73,7 @@ RUN \
 
 
 FROM ubuntu:24.10
-LABEL org.opencontainers.image.authors="magnus2468@gmail.com"
+LABEL org.opencontainers.image.authors="nstoik@stechsolutions.ca"
 
 VOLUME /downloads
 VOLUME /config
