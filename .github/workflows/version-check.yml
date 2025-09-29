@@ -2,7 +2,7 @@ name: Version Update Checker
 
 on:
   schedule:
-    - cron: '0 6 * * 1' # Runs every Monday at 6:00 UTC
+    - cron: '0 6 1 * *' # Runs monthly on the 1st at 06:00 UTC
   workflow_dispatch:
 
 jobs:
@@ -65,16 +65,16 @@ jobs:
 
           MSG=""
           if [ "$NEW_UBUNTU" != "$CURRENT_UBUNTU" ]; then
-            MSG="${MSG}Ubuntu: $CURRENT_UBUNTU → $NEW_UBUNTU\n"
+            MSG+="Ubuntu: $CURRENT_UBUNTU → $NEW_UBUNTU"$'\n'
           fi
           if [ "$NEW_QBT" != "$CURRENT_QBT" ]; then
-            MSG="${MSG}qBittorrent: $CURRENT_QBT → $NEW_QBT\n"
+            MSG+="qBittorrent: $CURRENT_QBT → $NEW_QBT"$'\n'
           fi
           if [ "$NEW_LIBT" != "$CURRENT_LIBT" ]; then
-            MSG="${MSG}libtorrent: $CURRENT_LIBT → $NEW_LIBT\n"
+            MSG+="libtorrent: $CURRENT_LIBT → $NEW_LIBT"$'\n'
           fi
           if [ "$NEW_VUET" != "$CURRENT_VUET" ]; then
-            MSG="${MSG}Vuetorrent: $CURRENT_VUET → $NEW_VUET\n"
+            MSG+="Vuetorrent: $CURRENT_VUET → $NEW_VUET"$'\n'
           fi
 
           if [ -n "$MSG" ]; then
