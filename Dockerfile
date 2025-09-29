@@ -1,8 +1,9 @@
 # qBittorrent and Wireguard
 
+ARG UBUNTU_VERSION=25.04
 
 # image for building
-FROM ubuntu:25.10 AS builder
+FROM ubuntu:${UBUNTU_VERSION} AS builder
 
 ARG LIBT_CMAKE_FLAGS=""
 ARG DEBIAN_FRONTEND=noninteractive
@@ -76,7 +77,7 @@ RUN curl -fsSL "https://github.com/wdaan/vuetorrent/releases/download/v${VUET_VE
     chmod -R u=rwX,go=rX "/opt/vuetorrent"
 
 
-FROM ubuntu:25.10
+FROM ubuntu:${UBUNTU_VERSION}
 LABEL org.opencontainers.image.authors="nstoik@stechsolutions.ca"
 
 VOLUME /downloads

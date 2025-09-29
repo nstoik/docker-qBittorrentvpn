@@ -100,6 +100,7 @@ id <username>
 Set your desired version variables:
 
 ```bash
+UBUNTU_VERSION=25.04
 QBT_VERSION=5.1.2
 LIBT_VERSION=2.0.11
 VUET_VERSION=2.30.1
@@ -111,10 +112,11 @@ TAG=nstoik/qbittorrent-vpn
 
 ```bash
 docker build \
-  --build-arg QBT_VERSION=$QBT_VERSION \
-  --build-arg LIBT_VERSION=$LIBT_VERSION \
-  --build-arg VUET_VERSION=$VUET_VERSION \
-  --tag "$TAG:$VERSION" .
+    --build-arg UBUNTU_VERSION=$UBUNTU_VERSION \
+    --build-arg QBT_VERSION=$QBT_VERSION \
+    --build-arg LIBT_VERSION=$LIBT_VERSION \
+    --build-arg VUET_VERSION=$VUET_VERSION \
+    --tag "$TAG:$VERSION" .
 ```
 
 ## Publish (push) the image
