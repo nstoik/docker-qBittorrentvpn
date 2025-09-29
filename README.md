@@ -135,7 +135,7 @@ This repository includes a GitHub Actions workflow (`.github/workflows/version-c
 - **libtorrent**
 - **Vuetorrent**
 
-The workflow runs weekly and compares the latest available versions with the current versions used in this project (as set in your repository variables).  
+The workflow runs monthly and compares the latest available versions with the current versions used in this project (as set in your repository variables).  
 If a newer version is detected, it will automatically open a GitHub issue to notify you of the update.
 
 
@@ -149,8 +149,6 @@ To change the versions being tracked, update the repository variables in your Gi
     - `CURRENT_QBT`
     - `CURRENT_LIBT`
     - `CURRENT_VUET`
-
-No need to edit the workflow file—just update the variables!
 
 ### Customizing the workflow
 
