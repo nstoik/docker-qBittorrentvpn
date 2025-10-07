@@ -92,7 +92,6 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends \
       ca-certificates \
       wireguard \
-      dos2unix \
       iptables \
       iputils-ping \
       iproute2 \

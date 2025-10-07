@@ -61,9 +61,6 @@ if [[ $VPN_ENABLED == "1" || $VPN_ENABLED == "true" || $VPN_ENABLED == "yes" ]];
 		exit 1
 	fi
 	
-	# convert CRLF (windows) to LF (unix) for ovpn
-	dos2unix "${VPN_CONFIG}" 1> /dev/null
-	
     # parse values from the conf file
     export vpn_remote_line=$(cat "${VPN_CONFIG}" | grep -P -o -m 1 '(?<=^Endpoint)(\s{0,})[^\n\r]+' | sed -e 's~^[=\ ]*~~')
 
