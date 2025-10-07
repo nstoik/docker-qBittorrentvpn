@@ -7,8 +7,7 @@ echo "[info] Waiting until tunnel is up" | ts '%Y-%m-%d %H:%M:%.S'
 
 # Wait until tunnel is up
 while : ; do
-	tunnelstat=$(netstat -ie | grep -E "wg")
-	if [[ ! -z "${tunnelstat}" ]]; then
+	if ip link show wg0 &>/dev/null; then
 		break
 	else
 		sleep 1
@@ -67,25 +66,30 @@ if [[ $iptable_mangle_exit_code == 0 ]]; then
 fi
 
 # identify docker bridge interface name (probably eth0)
- docker_interface=$(netstat -ie | grep -vE "lo|tun|tap" | sed -n '1!p' | grep -P -o -m 1 '^[\w]+')
+docker_interface=$(ip route | grep default | awk '{print $5}')
 if [[ "${DEBUG}" == "true" ]]; then
 	echo "[debug] Docker interface defined as ${docker_interface}"
 fi
 
+docker_ip_cidr=$(ip addr show "${docker_interface}" | grep -P -o -m 1 "(?<=inet\s)\d+(\.\d+){3}/\d+")
+if [[ "${DEBUG}" == "true" ]]; then
+	echo "[debug] Docker IP CIDR defined as ${docker_ip_cidr}"
+fi
+
 # identify ip for docker bridge interface
-docker_ip=$(ifconfig "${docker_interface}" | grep -o "inet [0-9]*\.[0-9]*\.[0-9]*\.[0-9]*" | grep -o "[0-9]*\.[0-9]*\.[0-9]*\.[0-9]*")
+docker_ip=$(echo "$docker_ip_cidr" | cut -d/ -f1)
 if [[ "${DEBUG}" == "true" ]]; then
  	echo "[debug] Docker IP defined as ${docker_ip}"
 fi
 
 # identify netmask for docker bridge interface
-docker_mask=$(ifconfig "${docker_interface}" | grep -o "netmask [0-9]*\.[0-9]*\.[0-9]*\.[0-9]*" | grep -o "[0-9]*\.[0-9]*\.[0-9]*\.[0-9]*")
+docker_mask=$(echo "$docker_ip_cidr" | cut -d/ -f2)
 if [[ "${DEBUG}" == "true" ]]; then
 	echo "[debug] Docker netmask defined as ${docker_mask}"
 fi
 
 # convert netmask into cidr format
-docker_network_cidr=$(ipcalc "${docker_ip}" "${docker_mask}" | grep -P -o -m 1 "(?<=Network:)\s+[^\s]+" | sed -e 's~^[ \t]*~~;s~[ \t]*$~~')
+docker_network_cidr=$(echo "$docker_ip_cidr")
 echo "[info] Docker network defined as ${docker_network_cidr}" | ts '%Y-%m-%d %H:%M:%.S'
 
 # input iptable rules
@@ -121,7 +125,6 @@ if [ -z "${INCOMING_PORT}" ]; then
 else
 	iptables -A INPUT -i eth0 -s "${LAN_NETWORK}" -p tcp --dport ${INCOMING_PORT} -j ACCEPT
 fi
-	
 
 
 # accept input icmp (ping)
