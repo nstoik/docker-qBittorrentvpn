@@ -71,7 +71,7 @@ RUN \
 
 # fetch and unpack vuetorrent
 ARG VUET_VERSION
-RUN curl -fsSL "https://github.com/wdaan/vuetorrent/releases/download/v${VUET_VERSION}/vuetorrent.zip" > "/tmp/vuetorrent.zip" && \
+RUN curl -fsSL "https://github.com/VueTorrent/VueTorrent/releases/download/v${VUET_VERSION}/vuetorrent.zip" > "/tmp/vuetorrent.zip" && \
     unzip "/tmp/vuetorrent.zip" -d "/opt/" && \
     rm "/tmp/vuetorrent.zip" && \
     chmod -R u=rwX,go=rX "/opt/vuetorrent"
@@ -96,6 +96,18 @@ RUN apt-get update \
       iptables \
       iputils-ping \
       iproute2 \
+      moreutils \
+      kmod \
+      libqt6core6 \
+      libqt6network6 \
+      libqt6gui6 \
+      libqt6widgets6 \
+      libqt6sql6 \
+      libqt6sql6-sqlite \
+      libqt6printsupport6 \
+      libqt6concurrent6 \
+      libqt6dbus6 \
+      libqt6xml6 \
     && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 COPY --from=builder /usr/bin/qbittorrent-nox /usr/bin/qbittorrent-nox
