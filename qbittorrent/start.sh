@@ -11,22 +11,20 @@ if [[ ! -e /config/qBittorrent/config/qBittorrent.conf ]]; then
 	chmod 755 /config/qBittorrent/config/qBittorrent.conf
 fi
 
-## Check for missing group
-/bin/egrep  -i "^${PGID}:" /etc/passwd
-if [ $? -eq 0 ]; then
-   echo "Group $PGID exists"
+# Check for existing group by GID
+if getent group "$PGID" >/dev/null; then
+    echo "[info] Group with GID $PGID exists"
 else
-   echo "Adding $PGID group"
-	 groupadd -g $PGID qbittorent
+    groupadd -g "$PGID" qbittorrent
+    echo "[info] Group 'qbittorrent' created with GID $PGID"
 fi
 
-## Check for missing userid
-/bin/egrep  -i "^${PUID}:" /etc/passwd
-if [ $? -eq 0 ]; then
-   echo "User $PUID exists in /etc/passwd"
+# Check for existing user by UID
+if getent passwd "$PUID" >/dev/null; then
+    echo "[info] User with UID $PUID exists"
 else
-   echo "Adding $PUID user"
-	 useradd -c "qbittorent user" -g $PGID -u $PUID qbittorent
+    useradd -u "$PUID" -g "$PGID" -c "qbittorrent user" qbittorrent
+    echo "[info] User 'qbittorrent' created with UID $PUID"
 fi
 
 # set umask
@@ -38,7 +36,6 @@ else
   echo "[warn] UMASK not defined (via -e UMASK), defaulting to '002'" | ts '%Y-%m-%d %H:%M:%.S'
   export UMASK="002"
 fi
-
 
 # Set qBittorrent WebUI and Incoming ports
 if [ ! -z "${WEBUI_PORT}" ]; then
