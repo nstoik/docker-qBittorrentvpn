@@ -18,18 +18,8 @@ else
 	export VPN_ENABLED="yes"
 fi
 if [[ $VPN_ENABLED == "1" || $VPN_ENABLED == "true" || $VPN_ENABLED == "yes" ]]; then
-	# Check if VPN_TYPE is set.
-	if [[ -z "${VPN_TYPE}" ]]; then
-		echo "[WARNING] VPN_TYPE not set, defaulting to OpenVPN." | ts '%Y-%m-%d %H:%M:%.S'
-		export VPN_TYPE="openvpn"
-	else
-		echo "[INFO] VPN_TYPE defined as '${VPN_TYPE}'" | ts '%Y-%m-%d %H:%M:%.S'
-	fi
+	echo "[info] VPN is enabled" | ts '%Y-%m-%d %H:%M:%.S'
 
-	if [[ "${VPN_TYPE}" != "openvpn" && "${VPN_TYPE}" != "wireguard" ]]; then
-		echo "[WARNING] VPN_TYPE not set, as 'wireguard' or 'openvpn', defaulting to OpenVPN." | ts '%Y-%m-%d %H:%M:%.S'
-		export VPN_TYPE="openvpn"
-	fi
 	# Create the directory to store WireGuard config files
 	mkdir -p /config/wireguard
 	# Set permmissions and owner for files in /config/wireguard directory
@@ -150,21 +140,13 @@ if [[ -z "${PGID}" ]]; then
 fi
 
 if [[ $VPN_ENABLED == "1" || $VPN_ENABLED == "true" || $VPN_ENABLED == "yes" ]]; then
-	if [[ "${VPN_TYPE}" == "openvpn" ]]; then
-		echo "[INFO] Starting OpenVPN..." | ts '%Y-%m-%d %H:%M:%.S'
-		cd /config/openvpn
-		exec openvpn --pull-filter ignore route-ipv6 --pull-filter ignore ifconfig-ipv6 --config "${VPN_CONFIG}" &
-		#exec /bin/bash /etc/openvpn/openvpn.init start &
-	else
-		echo "[INFO] Starting WireGuard..." | ts '%Y-%m-%d %H:%M:%.S'
-		cd /config/wireguard
-		if ip link | grep -q `basename -s .conf $VPN_CONFIG`; then
-			wg-quick down $VPN_CONFIG || echo "WireGuard is down already" | ts '%Y-%m-%d %H:%M:%.S' # Run wg-quick down as an extra safeguard in case WireGuard is still up for some reason
-			sleep 0.5 # Just to give WireGuard a bit to go down
-		fi
-		wg-quick up $VPN_CONFIG
-		#exec /bin/bash /etc/openvpn/openvpn.init start &
+	echo "[INFO] Starting WireGuard..." | ts '%Y-%m-%d %H:%M:%.S'
+	cd /config/wireguard
+	if ip link | grep -q `basename -s .conf $VPN_CONFIG`; then
+		wg-quick down $VPN_CONFIG || echo "WireGuard is down already" | ts '%Y-%m-%d %H:%M:%.S' # Run wg-quick down as an extra safeguard in case WireGuard is still up for some reason
+		sleep 0.5 # Just to give WireGuard a bit to go down
 	fi
+	wg-quick up $VPN_CONFIG
 	
 	echo "[info] vpn configured and started" | ts '%Y-%m-%d %H:%M:%.S'
 	exec /bin/bash /etc/qbittorrent/iptables.sh
