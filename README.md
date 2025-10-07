@@ -52,7 +52,7 @@ $ docker run --privileged  -d \
 
 | Volume | Required | Function | Example |
 |----------|----------|----------|----------|
-| `config` | Yes | qBittorrent and OpenVPN config files | `/your/config/path/:/config`|
+| `config` | Yes | qBittorrent and Wireguard config files | `/your/config/path/:/config`|
 | `downloads` | No | Default download path for torrents | `/your/downloads/path/:/downloads`|
 
 ## Ports
@@ -71,8 +71,20 @@ Access <http://IPADDRESS:PORT> from a browser on the same network.
 
 | Credential | Default Value |
 |----------|----------|
-|`WebUI Username`| admin |
-|`WebUI Password`| adminadmin |
+|`WebUI Username`| nelson |
+|`WebUI Password`| until manually changed, random on container start |
+
+To change the password, get the random password from the container logs and change it in the WebUI settings.
+```
+> cat /home/nelson/docker_mounts/downloader/qbittorrentvpn/qBittorrent/data/logs/qbittorrent-daemon.log;
+
+...
+******** Information ********
+To control qBittorrent, access the WebUI at: http://localhost:8080
+The WebUI administrator username is: nelson
+The WebUI administrator password was not set. A temporary password is provided for this session: Y3Eeat7wL
+You should set your own password in program preferences.
+```
 
 ## Origin header & Target origin mismatch
 
