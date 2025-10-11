@@ -3,7 +3,7 @@
 set -e
 
 # check for presence of network interface docker0
-check_network=$(ifconfig | grep docker0 || true)
+check_network=$(ip link show docker0 2>/dev/null)
 
 # if network interface docker0 is present then we are running in host mode and thus must exit
 if [[ ! -z "${check_network}" ]]; then
