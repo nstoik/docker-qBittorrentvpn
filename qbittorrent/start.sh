@@ -52,18 +52,34 @@ if [ ! -z "${WEBUI_PORT}" ]; then
 	fi
 fi
 
-if [ ! -z "${INCOMING_PORT}" ]; then
-	incoming_port_exist=$(cat /config/qBittorrent/config/qBittorrent.conf | grep -m 1 'Connection\\PortRangeMin='${INCOMING_PORT})
-	if [[ -z "${incoming_port_exist}" ]]; then
-		incoming_exist=$(cat /config/qBittorrent/config/qBittorrent.conf | grep -m 1 'Connection\\PortRangeMin')
-		if [[ ! -z "${incoming_exist}" ]]; then
-			# Get line number of Incoming
-			LINE_NUM=$(grep -Fn -m 1 'Connection\PortRangeMin' /config/qBittorrent/config/qBittorrent.conf | cut -d: -f 1)
-			sed -i "${LINE_NUM}s@.*@Connection\\PortRangeMin=${INCOMING_PORT}@" /config/qBittorrent/config/qBittorrent.conf
+if [[ -n "${INCOMING_PORT:-}" ]]; then
+	CONF_FILE="/config/qBittorrent/config/qBittorrent.conf"
+	echo "[info] Setting incoming port in qBittorrent config: ${INCOMING_PORT}" | ts '%Y-%m-%d %H:%M:%.S'
+
+	# Show current port before updating
+	CURRENT_PORT=$(grep -m 1 "Session\\\\Port=" "$CONF_FILE" | cut -d= -f2 || echo "none")
+	echo "[info] Current qBittorrent port: ${CURRENT_PORT}" | ts '%Y-%m-%d %H:%M:%.S'
+
+	# Replace existing Session\Port= value if found
+	if grep -q "^Session\\\\Port=" "$CONF_FILE"; then
+		sed -i "s@^Session\\\\Port=.*@Session\\\\Port=${INCOMING_PORT}@" "$CONF_FILE"
+		echo "[info] Replaced existing Session\\Port with ${INCOMING_PORT}" | ts '%Y-%m-%d %H:%M:%.S'
+	else
+		# If not found, insert it under the [BitTorrent] section
+		if grep -q "^\[BitTorrent\]" "$CONF_FILE"; then
+			 sed -i "/^\[BitTorrent\]/a Session\\\\Port=${INCOMING_PORT}" "$CONF_FILE"
+			echo "[info] Inserted Session\\Port=${INCOMING_PORT} under [BitTorrent] section" | ts '%Y-%m-%d %H:%M:%.S'
 		else
-			echo "Connection\PortRangeMin=${INCOMING_PORT}" >> /config/qBittorrent/config/qBittorrent.conf
+			echo "[warn] [BitTorrent] section not found — appending Session\\Port=${INCOMING_PORT} at end of file" | ts '%Y-%m-%d %H:%M:%.S'
+			echo -e "\n[BitTorrent]\nSession\\Port=${INCOMING_PORT}" >> "$CONF_FILE"
 		fi
 	fi
+
+	# Show final result
+	NEW_PORT=$(grep -m 1 "Session\\\\Port=" "$CONF_FILE" | cut -d= -f2 || echo "none")
+	echo "[info] Updated Session\\Port in config: ${NEW_PORT}" | ts '%Y-%m-%d %H:%M:%.S'
+else
+	echo "[warn] INCOMING_PORT not set, skipping qBittorrent port configuration." | ts '%Y-%m-%d %H:%M:%.S'
 fi
 
 echo "[info] Starting qBittorrent daemon..." | ts '%Y-%m-%d %H:%M:%.S'
