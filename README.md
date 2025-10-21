@@ -40,13 +40,13 @@ $ docker run --privileged  -d \
 | Variable | Required | Function | Example |
 |----------|----------|----------|----------|
 |`VPN_ENABLED`| Yes | Enable VPN? (yes/no) Default:yes|`VPN_ENABLED=yes`|
+|`VPN_PROVIDER`| No | VPN provider to use (eg. protonvpn) |`VPN_PROVIDER=protonvpn`|
 |`LAN_NETWORK`| Yes | Local Network with CIDR notation |`LAN_NETWORK=192.168.1.0/24`|
 |`NAME_SERVERS`| No | Comma delimited name servers |`NAME_SERVERS=8.8.8.8,8.8.4.4`|
 |`PUID`| No | UID applied to config files and downloads |`PUID=99`|
 |`PGID`| No | GID applied to config files and downloads |`PGID=100`|
 |`UMASK`| No | GID applied to config files and downloads |`UMASK=002`|
 |`WEBUI_PORT`| No | Applies WebUI port to qBittorrents config at boot (Must change exposed ports to match)  |`WEBUI_PORT=8080`|
-|`INCOMING_PORT`| No | Applies Incoming port to qBittorrents config at boot (Must change exposed ports to match) |`INCOMING_PORT=8999`|
 
 ## Volumes
 
@@ -62,6 +62,8 @@ $ docker run --privileged  -d \
 | `8080` | TCP | Yes | qBittorrent WebUI | `8080:8080`|
 | `8999` | TCP | Yes | qBittorrent listening port | `8999:8999`|
 | `8999` | UDP | Yes | qBittorrent listening port | `8999:8999/udp`|
+
+If using `VPN_PROVIDER=protonvpn`, startup script will automatically map the listening port via NAT-PMP. The healtcheck.sh script will check the port mapping and restart qBittorrent if the port changes.
 
 # Access the WebUI
 
@@ -90,10 +92,6 @@ You should set your own password in program preferences.
 
 WebUI\CSRFProtection must be set to false in qBittorrent.conf if using an unconfigured reverse proxy or forward request within a browser. This is the default setting unless changed. This file can be found in the dockers config directory in /qBittorrent/config
 
-## WebUI: Invalid Host header, port mismatch
-
-qBittorrent throws a [WebUI: Invalid Host header, port mismatch](https://github.com/qbittorrent/qBittorrent/issues/7641#issuecomment-339370794) error if you use port forwarding with bridge networking due to security features to prevent DNS rebinding attacks. If you need to run qBittorrent on different ports, instead edit the WEBUI_PORT_ENV and/or INCOMING_PORT_ENV variables AND the exposed ports to change the native ports qBittorrent uses.
-
 # How to configure Wireguard
 
 * Enable wireguard by configuring `VPN_ENABLED` to `yes`.
@@ -115,8 +113,8 @@ Set your desired version variables:
 UBUNTU_VERSION=25.04
 QBT_VERSION=5.1.2
 LIBT_VERSION=2.0.11
-VUET_VERSION=2.30.1
-VERSION=1.0.0
+VUET_VERSION=2.30.2
+VERSION=1.1.1
 TAG=nstoik/qbittorrent-vpn
 ```
 
