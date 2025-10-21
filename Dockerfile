@@ -107,6 +107,7 @@ RUN apt-get update \
       libqt6concurrent6 \
       libqt6dbus6 \
       libqt6xml6 \
+      natpmpc \
     && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 COPY --from=builder /usr/bin/qbittorrent-nox /usr/bin/qbittorrent-nox
@@ -123,6 +124,4 @@ LABEL autoheal=true
 
 # Expose ports and run
 EXPOSE 8080
-EXPOSE 8999
-EXPOSE 8999/udp
 CMD ["/bin/bash", "/etc/scripts/start.sh"]
