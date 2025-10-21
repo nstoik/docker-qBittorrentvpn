@@ -2,14 +2,6 @@
 # Forked from binhex's OpenVPN dockers
 set -e
 
-# check for presence of network interface docker0
-check_network=$(ip link show docker0 2>/dev/null)
-
-# if network interface docker0 is present then we are running in host mode and thus must exit
-if [[ ! -z "${check_network}" ]]; then
-	echo "[crit] Network type detected as 'Host', this will cause major issues, please stop the container and switch back to 'Bridge' mode" | ts '%Y-%m-%d %H:%M:%.S' && exit 1
-fi
-
 export VPN_ENABLED=$(echo "${VPN_ENABLED}" | sed -e 's~^[ \t]*~~;s~[ \t]*$~~')
 if [[ ! -z "${VPN_ENABLED}" ]]; then
 	echo "[info] VPN_ENABLED defined as '${VPN_ENABLED}'" | ts '%Y-%m-%d %H:%M:%.S'
@@ -149,6 +141,28 @@ if [[ $VPN_ENABLED == "1" || $VPN_ENABLED == "true" || $VPN_ENABLED == "yes" ]];
 	wg-quick up $VPN_CONFIG
 	
 	echo "[info] vpn configured and started" | ts '%Y-%m-%d %H:%M:%.S'
+
+	if [[ "${VPN_PROVIDER:-}" == "protonvpn" ]]; then
+		echo "[INFO] Detected VPN_PROVIDER as 'protonvpn'" | ts '%Y-%m-%d %H:%M:%.S'
+
+		echo "[INFO] Clearing existing port file if it exists..." | ts '%Y-%m-%d %H:%M:%.S'
+		rm -f /config/wireguard/public_ip_port.txt /config/wireguard/last_port.txt
+
+		echo "[INFO] Running ProtonVPN NAT-PMP setup..." | ts '%Y-%m-%d %H:%M:%.S'
+		/etc/scripts/protonvpn_port.sh || {
+			echo "[ERROR] ProtonVPN NAT-PMP script failed. Aborting startup." | ts '%Y-%m-%d %H:%M:%.S'
+			exit 1
+		}
+
+		# Read the assigned incoming port from the file set by protonvpn_port.sh and then export it
+		if [[ -f "/config/wireguard/public_ip_port.txt" ]]; then
+			export INCOMING_PORT=$(cut -d: -f2 /config/wireguard/public_ip_port.txt)
+			echo "[info] Retrieved INCOMING_PORT: ${INCOMING_PORT}" | ts '%Y-%m-%d %H:%M:%.S'
+		else
+			echo "[ERROR] Expected port file /config/wireguard/public_ip_port.txt not found after ProtonVPN NAT-PMP setup. Aborting startup." | ts '%Y-%m-%d %H:%M:%.S'
+			exit 1
+		fi
+	fi
 	exec /bin/bash /etc/qbittorrent/iptables.sh
 else
 	echo "[WARNIG] @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@" | ts '%Y-%m-%d %H:%M:%.S'
