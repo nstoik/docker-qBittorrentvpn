@@ -87,7 +87,7 @@ jobs:
 
             if [ -n "$EXISTING_ISSUE" ]; then
               # Add a comment to the existing issue
-              gh issue comment "$EXISTING_ISSUE" --body "$MSG"
+              gh issue comment "$EXISTING_ISSUE" --repo $GITHUB_REPOSITORY --body "$MSG"
             else
               # Create a new issue if none exists
               gh issue create --title "Dependency Update Available" --body "$MSG" --repo $GITHUB_REPOSITORY
