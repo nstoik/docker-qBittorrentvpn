@@ -82,6 +82,10 @@ else
 	echo "[warn] INCOMING_PORT not set, skipping qBittorrent port configuration." | ts '%Y-%m-%d %H:%M:%.S'
 fi
 
+# Clean up stale lock files from a previous run
+echo "[info] Cleaning up stale lock files..." | ts '%Y-%m-%d %H:%M:%.S'
+rm -f /config/qBittorrent/config/lockfile /config/qBittorrent/config/ipc-socket
+
 echo "[info] Starting qBittorrent daemon..." | ts '%Y-%m-%d %H:%M:%.S'
 /bin/bash /etc/qbittorrent/qbittorrent.init start &
 chmod -R 755 /config/qBittorrent
@@ -90,13 +94,17 @@ sleep 1
 qbpid=$(pgrep -o -x qbittorrent-nox)
 echo "[info] qBittorrent PID: $qbpid" | ts '%Y-%m-%d %H:%M:%.S'
 
-if [ -e /proc/$qbpid ]; then
+if [[ -n "$qbpid" ]] && [ -e /proc/$qbpid ]; then
 	if [[ -e /config/qBittorrent/data/logs/qbittorrent.log ]]; then
 		chmod 775 /config/qBittorrent/data/logs/qbittorrent.log
 	fi
 	sleep infinity
 	exit 1
 else
-	echo "qBittorrent failed to start!"
+	echo "[error] qBittorrent failed to start!" | ts '%Y-%m-%d %H:%M:%.S'
+	if [[ -f /config/qBittorrent/data/logs/qbittorrent.log ]]; then
+		echo "[error] Last 20 lines of qBittorrent log:" | ts '%Y-%m-%d %H:%M:%.S'
+		tail -20 /config/qBittorrent/data/logs/qbittorrent.log
+	fi
 	exit 1
 fi
