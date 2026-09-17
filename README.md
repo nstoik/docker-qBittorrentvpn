@@ -7,7 +7,7 @@ Docker container which runs the latest headless qBittorrent client with WebUI wh
 
 * Base: Ubuntu 26.04
 * qBittorrent: 5.2.3
-* lib_torrent: 2.1.1
+* lib_torrent: 2.0.14
 * qt 6.10
 * Vuetorrent: 2.35.0
 * Wireguard VPN support
@@ -113,7 +113,7 @@ Set your desired version variables:
 ```bash
 UBUNTU_VERSION=26.04
 QBT_VERSION=5.2.3
-LIBT_VERSION=2.1.1
+LIBT_VERSION=2.0.14
 VUET_VERSION=2.35.0
 VERSION=1.3.1
 TAG=nstoik/qbittorrent-vpn
