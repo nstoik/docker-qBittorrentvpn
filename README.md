@@ -108,6 +108,15 @@ id <username>
 
 # Building and Publishing the Docker Image
 
+> **Note:** `QBT_VERSION` and `LIBT_VERSION` are not independently upgradable — libtorrent
+> does not keep API/ABI stable across minor versions, and qBittorrent only supports one
+> libtorrent line per release. Bumping `LIBT_VERSION` to a new major/minor line (e.g.
+> 2.0.x → 2.1.x) before the paired `QBT_VERSION` officially supports it will fail to
+> build. As of this writing, qBittorrent 5.2.x only supports libtorrent 2.0.x; libtorrent
+> 2.1 support lands in the upcoming 5.3.x line (see
+> [qbittorrent/qBittorrent#24689](https://github.com/qbittorrent/qBittorrent/issues/24689)).
+> Check qBittorrent's release notes/issues before bumping `LIBT_VERSION` past 2.0.x.
+
 Set your desired version variables:
 
 ```bash
