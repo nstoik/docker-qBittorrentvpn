@@ -6,10 +6,10 @@ Docker container which runs the latest headless qBittorrent client with WebUI wh
 ## Docker Features
 
 * Base: Ubuntu 26.04
-* qBittorrent: 5.2.0
-* lib_torrent: 2.0.12
+* qBittorrent: 5.2.3
+* lib_torrent: 2.1.1
 * qt 6.10
-* Vuetorrent: 2.34.0
+* Vuetorrent: 2.35.0
 * Wireguard VPN support
 * IP tables kill switch to prevent IP leaking when VPN connection fails
 * Specify name servers to add to container
@@ -112,10 +112,10 @@ Set your desired version variables:
 
 ```bash
 UBUNTU_VERSION=26.04
-QBT_VERSION=5.2.0
-LIBT_VERSION=2.0.12
-VUET_VERSION=2.34.0
-VERSION=1.3.0
+QBT_VERSION=5.2.3
+LIBT_VERSION=2.1.1
+VUET_VERSION=2.35.0
+VERSION=1.3.1
 TAG=nstoik/qbittorrent-vpn
 ```
 
