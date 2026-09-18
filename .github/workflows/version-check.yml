@@ -30,6 +30,13 @@ jobs:
             | jq -r '.[0].name' | sed 's/release-//')
           echo "latest_qbt=$QBT_LATEST" >> $GITHUB_OUTPUT
 
+      # NOTE: this only diffs the latest upstream libtorrent tag against ours — it has
+      # no idea whether that version actually builds against our current QBT_VERSION.
+      # libtorrent does not keep API/ABI stable across minor versions (2.0 -> 2.1 was
+      # a breaking change qBittorrent didn't support until the 5.3.x line). Before
+      # bumping LIBT_VERSION to a new major/minor line, confirm the target QBT_VERSION
+      # officially supports it (check https://github.com/qbittorrent/qBittorrent/issues
+      # for a "Support LibTorrent X.Y" issue/changelog entry) — otherwise the build fails.
       - name: Check latest libtorrent release
         id: libtorrent
         run: |
