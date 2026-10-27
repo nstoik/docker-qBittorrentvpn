@@ -91,6 +91,7 @@ RUN usermod -u 99 nobody
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
       ca-certificates \
+      curl \
       wireguard \
       iptables \
       iputils-ping \
