@@ -80,7 +80,11 @@ Port forwarding is best-effort by default:
 
 Set `NATPMP_REQUIRED=yes` to get the old behaviour back: startup aborts if no port can be mapped, and the healthcheck fails while no port is forwarded.
 
-To let the loop use the WebUI API without credentials, `127.0.0.1/32` is added to `WebUI\AuthSubnetWhitelist` (and the whitelist is enabled) at startup. Only processes in the container's network namespace, including containers using `network_mode: service:<this container>`, connect from 127.0.0.1. LAN and reverse proxy clients still have to log in. If the whitelist is disabled but already has other entries, it is left alone. In that case, set `QBT_WEBUI_USERNAME` and `QBT_WEBUI_PASSWORD` instead.
+To let the loop use the WebUI API without credentials, `127.0.0.1/32` is added to `WebUI\AuthSubnetWhitelist` (and the whitelist is enabled) at startup. Only processes in the container's network namespace, including containers using `network_mode: service:<this container>`, connect from 127.0.0.1. LAN and reverse proxy clients still have to log in.
+
+> **Reverse proxies:** if you turn on `WebUI\ReverseProxySupportEnabled`, qBittorrent takes the client address from the `X-Forwarded-For` header sent by trusted proxies. Make sure your proxy appends the real client IP to that header (Traefik and nginx's `$proxy_add_x_forwarded_for` do) rather than forwarding a client-supplied value unchanged. Otherwise a client could claim to be `127.0.0.1` and skip the login.
+
+If the whitelist is disabled but already has other entries, it is left alone. In that case, set `QBT_WEBUI_USERNAME` and `QBT_WEBUI_PASSWORD` instead.
 
 # Access the WebUI
 
