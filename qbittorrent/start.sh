@@ -52,34 +52,46 @@ if [ ! -z "${WEBUI_PORT}" ]; then
 	fi
 fi
 
+CONF_FILE="/config/qBittorrent/config/qBittorrent.conf"
+
 if [[ -n "${INCOMING_PORT:-}" ]]; then
-	CONF_FILE="/config/qBittorrent/config/qBittorrent.conf"
-	echo "[info] Setting incoming port in qBittorrent config: ${INCOMING_PORT}" | ts '%Y-%m-%d %H:%M:%.S'
-
-	# Show current port before updating
-	CURRENT_PORT=$(grep -m 1 "Session\\\\Port=" "$CONF_FILE" | cut -d= -f2 || echo "none")
-	echo "[info] Current qBittorrent port: ${CURRENT_PORT}" | ts '%Y-%m-%d %H:%M:%.S'
-
-	# Replace existing Session\Port= value if found
-	if grep -q "^Session\\\\Port=" "$CONF_FILE"; then
-		sed -i "s@^Session\\\\Port=.*@Session\\\\Port=${INCOMING_PORT}@" "$CONF_FILE"
-		echo "[info] Replaced existing Session\\Port with ${INCOMING_PORT}" | ts '%Y-%m-%d %H:%M:%.S'
-	else
-		# If not found, insert it under the [BitTorrent] section
-		if grep -q "^\[BitTorrent\]" "$CONF_FILE"; then
-			 sed -i "/^\[BitTorrent\]/a Session\\\\Port=${INCOMING_PORT}" "$CONF_FILE"
-			echo "[info] Inserted Session\\Port=${INCOMING_PORT} under [BitTorrent] section" | ts '%Y-%m-%d %H:%M:%.S'
-		else
-			echo "[warn] [BitTorrent] section not found — appending Session\\Port=${INCOMING_PORT} at end of file" | ts '%Y-%m-%d %H:%M:%.S'
-			echo -e "\n[BitTorrent]\nSession\\Port=${INCOMING_PORT}" >> "$CONF_FILE"
-		fi
-	fi
-
-	# Show final result
-	NEW_PORT=$(grep -m 1 "Session\\\\Port=" "$CONF_FILE" | cut -d= -f2 || echo "none")
-	echo "[info] Updated Session\\Port in config: ${NEW_PORT}" | ts '%Y-%m-%d %H:%M:%.S'
+	/bin/bash /etc/qbittorrent/set_incoming_port.sh "${INCOMING_PORT}"
 else
 	echo "[warn] INCOMING_PORT not set, skipping qBittorrent port configuration." | ts '%Y-%m-%d %H:%M:%.S'
+fi
+
+# Set a [Preferences] key in qBittorrent.conf, adding it if missing. Key is given
+# as in the file, e.g. 'WebUI\AuthSubnetWhitelist'
+set_preference() {
+	local key_re="${1//\\/\\\\}" value="$2"
+	if grep -q "^${key_re}=" "$CONF_FILE"; then
+		sed -i "s@^${key_re}=.*@${key_re}=${value}@" "$CONF_FILE"
+	elif grep -q "^\[Preferences\]" "$CONF_FILE"; then
+		sed -i "/^\[Preferences\]/a ${key_re}=${value}" "$CONF_FILE"
+	else
+		echo -e "\n[Preferences]\n${1}=${value}" >> "$CONF_FILE"
+	fi
+}
+
+# The ProtonVPN NAT-PMP loop updates the listening port through the WebUI API on
+# 127.0.0.1, so let localhost use the API without logging in. Only processes in
+# this container's network namespace connect from 127.0.0.1; LAN and reverse
+# proxy clients still have to authenticate.
+if [[ "${VPN_PROVIDER:-}" == "protonvpn" ]]; then
+	whitelist=$(grep -m 1 '^WebUI\\AuthSubnetWhitelist=' "$CONF_FILE" | cut -d= -f2-)
+	whitelist_enabled=$(grep -m 1 '^WebUI\\AuthSubnetWhitelistEnabled=' "$CONF_FILE" | cut -d= -f2-)
+	[[ "${whitelist}" == "@Invalid()" ]] && whitelist=""
+
+	if [[ "${whitelist_enabled}" == "true" && ",${whitelist// /}," == *",127.0.0.1/32,"* ]]; then
+		echo "[info] 127.0.0.1/32 already in WebUI auth whitelist" | ts '%Y-%m-%d %H:%M:%.S'
+	elif [[ "${whitelist_enabled}" != "true" && -n "${whitelist}" ]]; then
+		# Enabling the whitelist would also activate the other (disabled) entries
+		echo "[warn] WebUI auth whitelist is disabled but contains '${whitelist}'; not enabling it. Set QBT_WEBUI_USERNAME/QBT_WEBUI_PASSWORD so NAT-PMP port changes can be applied via the WebUI API" | ts '%Y-%m-%d %H:%M:%.S'
+	else
+		set_preference 'WebUI\AuthSubnetWhitelist' "${whitelist:+${whitelist}, }127.0.0.1/32"
+		set_preference 'WebUI\AuthSubnetWhitelistEnabled' "true"
+		echo "[info] Added 127.0.0.1/32 to WebUI auth whitelist for NAT-PMP port updates" | ts '%Y-%m-%d %H:%M:%.S'
+	fi
 fi
 
 # Clean up stale lock files from a previous run

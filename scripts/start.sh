@@ -145,23 +145,29 @@ if [[ $VPN_ENABLED == "1" || $VPN_ENABLED == "true" || $VPN_ENABLED == "yes" ]];
 	if [[ "${VPN_PROVIDER:-}" == "protonvpn" ]]; then
 		echo "[INFO] Detected VPN_PROVIDER as 'protonvpn'" | ts '%Y-%m-%d %H:%M:%.S'
 
+		NATPMP_REQUIRED=$(echo "${NATPMP_REQUIRED:-no}" | sed -e 's~^[ \t]*~~;s~[ \t]*$~~')
+		export NATPMP_REQUIRED
+		echo "[INFO] NATPMP_REQUIRED defined as '${NATPMP_REQUIRED}'" | ts '%Y-%m-%d %H:%M:%.S'
+
+		# last_port.txt was used by the healthcheck in versions <= 1.3.1
 		echo "[INFO] Clearing existing port file if it exists..." | ts '%Y-%m-%d %H:%M:%.S'
 		rm -f /config/wireguard/public_ip_port.txt /config/wireguard/last_port.txt
 
 		echo "[INFO] Running ProtonVPN NAT-PMP setup..." | ts '%Y-%m-%d %H:%M:%.S'
-		/etc/scripts/protonvpn_port.sh || {
-			echo "[ERROR] ProtonVPN NAT-PMP script failed. Aborting startup." | ts '%Y-%m-%d %H:%M:%.S'
-			exit 1
-		}
-
-		# Read the assigned incoming port from the file set by protonvpn_port.sh and then export it
-		if [[ -f "/config/wireguard/public_ip_port.txt" ]]; then
-			export INCOMING_PORT=$(cut -d: -f2 /config/wireguard/public_ip_port.txt)
+		if /etc/scripts/protonvpn_port.sh && [[ -s "/config/wireguard/public_ip_port.txt" ]]; then
+			# Read the assigned incoming port from the file set by protonvpn_port.sh and then export it
+			INCOMING_PORT=$(cut -d: -f2 /config/wireguard/public_ip_port.txt)
+			export INCOMING_PORT
 			echo "[info] Retrieved INCOMING_PORT: ${INCOMING_PORT}" | ts '%Y-%m-%d %H:%M:%.S'
-		else
-			echo "[ERROR] Expected port file /config/wireguard/public_ip_port.txt not found after ProtonVPN NAT-PMP setup. Aborting startup." | ts '%Y-%m-%d %H:%M:%.S'
+		elif [[ $NATPMP_REQUIRED == "1" || $NATPMP_REQUIRED == "true" || $NATPMP_REQUIRED == "yes" ]]; then
+			echo "[ERROR] ProtonVPN NAT-PMP port forwarding failed and NATPMP_REQUIRED is '${NATPMP_REQUIRED}'. Aborting startup." | ts '%Y-%m-%d %H:%M:%.S'
 			exit 1
+		else
+			echo "[warn] ProtonVPN NAT-PMP port forwarding failed. Starting qBittorrent with its configured listening port; port forwarding will be retried in the background." | ts '%Y-%m-%d %H:%M:%.S'
 		fi
+
+		# Keep the mapping alive (and retry it if it failed) for the life of the container
+		/etc/scripts/protonvpn_port_loop.sh "${INCOMING_PORT:-}" &
 	fi
 	exec /bin/bash /etc/qbittorrent/iptables.sh
 else
