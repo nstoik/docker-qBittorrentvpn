@@ -14,11 +14,13 @@ if [[ $VPN_ENABLED == "1" || $VPN_ENABLED == "true" || $VPN_ENABLED == "yes" ]];
 
 	# Create the directory to store WireGuard config files
 	mkdir -p /config/wireguard
-	# Set permmissions and owner for files in /config/wireguard directory
+	# Set owner for files in /config/wireguard, and keep the configs (which hold
+	# the WireGuard private key) readable by their owner only
 	set +e
 	chown -R "${PUID}":"${PGID}" "/config/wireguard" &> /dev/null
 	exit_code_chown=$?
-	chmod -R 775 "/config/wireguard" &> /dev/null
+	chmod 700 "/config/wireguard" &> /dev/null \
+		&& find /config/wireguard -maxdepth 1 -type f -name "*.conf" -exec chmod 600 {} + &> /dev/null
 	exit_code_chmod=$?
 	set -e
 	if (( ${exit_code_chown} != 0 || ${exit_code_chmod} != 0 )); then

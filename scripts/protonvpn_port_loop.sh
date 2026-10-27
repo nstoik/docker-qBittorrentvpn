@@ -68,11 +68,8 @@ set_port_via_api() {
 set_port_via_restart() {
     local port="$1"
     log "[warn] Restarting qBittorrent to apply port ${port}"
+    # Blocks until qBittorrent has exited (or been killed after 60s)
     /bin/bash /etc/qbittorrent/qbittorrent.init stop >/dev/null 2>&1
-    for _ in {1..30}; do
-        qbittorrent_running || break
-        sleep 1
-    done
     if qbittorrent_running; then
         log "[error] qBittorrent did not stop, port ${port} not applied"
         return 1

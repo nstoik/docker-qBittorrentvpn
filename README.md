@@ -23,6 +23,7 @@ To run the container use this command:
 
 ```
 $ docker run --privileged  -d \
+              --stop-timeout 30 \
               -v /your/config/path/:/config \
               -v /your/downloads/path/:/downloads \
               -e "VPN_ENABLED=yes" \
@@ -86,6 +87,12 @@ To let the loop use the WebUI API without credentials, `127.0.0.1/32` is added t
 
 If the whitelist is disabled but already has other entries, it is left alone. In that case, set `QBT_WEBUI_USERNAME` and `QBT_WEBUI_PASSWORD` instead.
 
+## Stopping the container
+
+On `docker stop` (SIGTERM), the container stops the NAT-PMP loop, stops qBittorrent gracefully so it can save resume data, and brings WireGuard down. It then exits with code 0. qBittorrent gets up to 60s before it is killed, but Docker only waits 10s by default before sending SIGKILL. With many torrents, raise that limit with `--stop-timeout 30` (`docker run`) or `stop_grace_period: 30s` (Compose).
+
+If qBittorrent stops running for about 30s (e.g. it crashed), the container exits with code 1 so your restart policy can restart it.
+
 # Access the WebUI
 
 Access <http://IPADDRESS:PORT> from a browser on the same network.
@@ -117,6 +124,7 @@ WebUI\CSRFProtection must be set to false in qBittorrent.conf if using an unconf
 
 * Enable wireguard by configuring `VPN_ENABLED` to `yes`.
 * Copy over the desired .conf file into `/config/wireguard/`. If multiple .config files exists, the first file will be used.
+* On every start, `/config/wireguard` is set to `700` and its `.conf` files to `600` (owned by `PUID:PGID`), since they contain the WireGuard private key.
 
 # PUID/PGID
 
@@ -144,7 +152,7 @@ UBUNTU_VERSION=26.04
 QBT_VERSION=5.2.3
 LIBT_VERSION=2.0.14
 VUET_VERSION=2.35.0
-VERSION=1.3.2
+VERSION=1.3.3
 TAG=nstoik/qbittorrent-vpn
 ```
 
