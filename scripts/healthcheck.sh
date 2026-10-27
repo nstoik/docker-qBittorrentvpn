@@ -27,34 +27,26 @@ fi
 echo "[info] qbittorrent-nox is running"
 
 # ProtonVPN NAT-PMP port check
+# Port forwarding is best-effort: protonvpn_port_loop.sh keeps retrying it and
+# applies port changes to qBittorrent itself, so a missing port only fails the
+# healthcheck when NATPMP_REQUIRED is set.
 if [[ "${VPN_PROVIDER:-}" == "protonvpn" ]]; then
     IP_PORT_FILE="/config/wireguard/public_ip_port.txt"
-    LAST_PORT_FILE="/config/wireguard/last_port.txt"
+    NATPMP_REQUIRED="${NATPMP_REQUIRED:-no}"
 
-    if [[ ! -f "$IP_PORT_FILE" ]]; then
-        echo "[error] IP/Port file missing: $IP_PORT_FILE"
-        exit 1
+    CURRENT_PORT=""
+    if [[ -f "$IP_PORT_FILE" ]]; then
+        CURRENT_PORT=$(cut -d: -f2 "$IP_PORT_FILE")
     fi
 
-    CURRENT_PORT=$(cut -d: -f2 "$IP_PORT_FILE")
-    if [[ -z "$CURRENT_PORT" ]]; then
-        echo "[error] Failed to read current port from $IP_PORT_FILE"
+    if [[ -n "$CURRENT_PORT" ]]; then
+        echo "[info] NAT-PMP forwarded port: $CURRENT_PORT"
+    elif [[ $NATPMP_REQUIRED == "1" || $NATPMP_REQUIRED == "true" || $NATPMP_REQUIRED == "yes" ]]; then
+        echo "[error] No NAT-PMP forwarded port ($IP_PORT_FILE missing or empty) and NATPMP_REQUIRED is '$NATPMP_REQUIRED'"
         exit 1
-    fi
-
-    # If last_port.txt does not exist, create it and continue
-    if [[ ! -f "$LAST_PORT_FILE" ]]; then
-        echo "$CURRENT_PORT" > "$LAST_PORT_FILE"
-        echo "[info] Last port file created with port: $CURRENT_PORT"
     else
-        LAST_PORT=$(<"$LAST_PORT_FILE")
-        if [[ "$CURRENT_PORT" != "$LAST_PORT" ]]; then
-            echo "[error] NAT-PMP port changed: $LAST_PORT -> $CURRENT_PORT"
-            exit 1
-        fi
+        echo "[warn] No NAT-PMP forwarded port ($IP_PORT_FILE missing or empty), port forwarding is being retried"
     fi
-
-    echo "[info] NAT-PMP port check passed: $CURRENT_PORT"
 fi
 
 echo "[info] Healthcheck passed"
