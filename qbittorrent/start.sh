@@ -137,14 +137,14 @@ if [[ -n "$qbpid" ]] && [ -e /proc/$qbpid ]; then
 	fi
 
 	# Exit if qBittorrent stays down (e.g. it crashed) so the restart policy can
-	# take over. The NAT-PMP keep-alive may restart it to apply a new port, so
-	# allow a short gap first.
+	# take over. The NAT-PMP keep-alive may restart it (with a new PID) to apply
+	# a new port, so look it up again and allow a short gap first.
 	down_checks=0
 	while true; do
 		# The trap only runs once a foreground command finishes, but 'wait'
 		# returns as soon as a signal arrives
 		sleep 5 & wait $!
-		if pgrep -x qbittorrent-nox >/dev/null; then
+		if [[ -n "$qbpid" && -e /proc/$qbpid ]] || qbpid=$(pgrep -o -x qbittorrent-nox); then
 			down_checks=0
 		elif (( ++down_checks >= 6 )); then
 			echo "[error] qBittorrent is no longer running, exiting..." | ts '%Y-%m-%d %H:%M:%.S'
