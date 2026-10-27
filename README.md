@@ -48,6 +48,9 @@ $ docker run --privileged  -d \
 |`PGID`| No | GID applied to config files and downloads |`PGID=100`|
 |`UMASK`| No | GID applied to config files and downloads |`UMASK=002`|
 |`WEBUI_PORT`| No | Applies WebUI port to qBittorrents config at boot (Must change exposed ports to match)  |`WEBUI_PORT=8080`|
+|`NATPMP_REQUIRED`| No | With `VPN_PROVIDER=protonvpn`: abort startup and mark the container unhealthy when no NAT-PMP port is forwarded (yes/no) Default:no |`NATPMP_REQUIRED=no`|
+|`QBT_WEBUI_USERNAME`| No | WebUI user for applying NAT-PMP port changes, only needed if localhost can't be whitelisted (see below) |`QBT_WEBUI_USERNAME=admin`|
+|`QBT_WEBUI_PASSWORD`| No | Password for `QBT_WEBUI_USERNAME` |`QBT_WEBUI_PASSWORD=secret`|
 
 ## Volumes
 
@@ -64,7 +67,20 @@ $ docker run --privileged  -d \
 | `8999` | TCP | Yes | qBittorrent listening port | `8999:8999`|
 | `8999` | UDP | Yes | qBittorrent listening port | `8999:8999/udp`|
 
-If using `VPN_PROVIDER=protonvpn`, startup script will automatically map the listening port via NAT-PMP. The healtcheck.sh script will check the port mapping and restart qBittorrent if the port changes.
+## ProtonVPN port forwarding (NAT-PMP)
+
+If using `VPN_PROVIDER=protonvpn`, the startup script maps a forwarded port via NAT-PMP and sets it as qBittorrent's listening port. The forwarded port is written to `/config/wireguard/public_ip_port.txt` as `IP:PORT`.
+
+Port forwarding is best-effort by default:
+
+* If NAT-PMP fails at startup, a `[warn]` is logged and qBittorrent starts with its existing configured listening port. The iptables kill switch is applied exactly as normal.
+* A background loop renews the mapping every 45s. If the mapping fails or a renewal is lost, it retries with backoff (15s, doubling up to 5 min) until it succeeds.
+* When the forwarded port changes, the loop updates qBittorrent's listening port through the WebUI API (`/api/v2/app/setPreferences`). If the API can't be used, it restarts qBittorrent with the new port instead.
+* The healthcheck doesn't fail because of a missing forwarded port, as long as the VPN and qBittorrent are up.
+
+Set `NATPMP_REQUIRED=yes` to get the old behaviour back: startup aborts if no port can be mapped, and the healthcheck fails while no port is forwarded.
+
+To let the loop use the WebUI API without credentials, `127.0.0.1/32` is added to `WebUI\AuthSubnetWhitelist` (and the whitelist is enabled) at startup. Only processes in the container's network namespace, including containers using `network_mode: service:<this container>`, connect from 127.0.0.1. LAN and reverse proxy clients still have to log in. If the whitelist is disabled but already has other entries, it is left alone. In that case, set `QBT_WEBUI_USERNAME` and `QBT_WEBUI_PASSWORD` instead.
 
 # Access the WebUI
 
@@ -124,7 +140,7 @@ UBUNTU_VERSION=26.04
 QBT_VERSION=5.2.3
 LIBT_VERSION=2.0.14
 VUET_VERSION=2.35.0
-VERSION=1.3.1
+VERSION=1.3.2
 TAG=nstoik/qbittorrent-vpn
 ```
 
