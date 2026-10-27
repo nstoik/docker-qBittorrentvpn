@@ -89,9 +89,11 @@ do_start()
 #
 do_stop()
 {
-	start-stop-daemon --stop --exec "$DAEMONPATH$DAEMON"
-	sleep 2
-	return "$?"
+	# Send SIGTERM and wait up to 60s for qBittorrent to save resume data and
+	# exit, then fall back to SIGKILL. Match on the process name: --exec reads
+	# /proc/<pid>/exe, which root can't do for a PUID-owned process without
+	# CAP_SYS_PTRACE, and the pidfile holds the 'bash -c' wrapper's PID.
+	start-stop-daemon --stop --retry TERM/60/KILL/5 --name "$NAME"
 }
 
 

@@ -1,4 +1,29 @@
 #!/bin/bash
+
+# This script ends up as PID 1, and the kernel drops any signal to PID 1 that
+# has no handler, so without this trap 'docker stop' always ends in a SIGKILL
+shutdown() {
+	echo "[info] Caught signal, shutting down..." | ts '%Y-%m-%d %H:%M:%.S'
+	# Stop the NAT-PMP keep-alive first so it can't restart qBittorrent
+	pkill -f protonvpn_port_loop.sh
+	echo "[info] Stopping qBittorrent..." | ts '%Y-%m-%d %H:%M:%.S'
+	/bin/bash /etc/qbittorrent/qbittorrent.init stop
+	if [[ -n "${VPN_CONFIG:-}" ]] && ip link show wg0 &>/dev/null; then
+		echo "[info] Stopping WireGuard..." | ts '%Y-%m-%d %H:%M:%.S'
+		wg-quick down "${VPN_CONFIG}" &>/dev/null
+	fi
+	echo "[info] Shutdown complete" | ts '%Y-%m-%d %H:%M:%.S'
+	exit 0
+}
+trap shutdown SIGTERM SIGINT
+
+show_qbittorrent_log() {
+	if [[ -f /config/qBittorrent/data/logs/qbittorrent.log ]]; then
+		echo "[error] Last 20 lines of qBittorrent log:" | ts '%Y-%m-%d %H:%M:%.S'
+		tail -20 /config/qBittorrent/data/logs/qbittorrent.log
+	fi
+}
+
 if [[ ! -e /config/qBittorrent ]]; then
 	mkdir -p /config/qBittorrent/config/
 	chown -R ${PUID}:${PGID} /config/qBittorrent
@@ -110,13 +135,25 @@ if [[ -n "$qbpid" ]] && [ -e /proc/$qbpid ]; then
 	if [[ -e /config/qBittorrent/data/logs/qbittorrent.log ]]; then
 		chmod 775 /config/qBittorrent/data/logs/qbittorrent.log
 	fi
-	sleep infinity
-	exit 1
+
+	# Exit if qBittorrent stays down (e.g. it crashed) so the restart policy can
+	# take over. The NAT-PMP keep-alive may restart it to apply a new port, so
+	# allow a short gap first.
+	down_checks=0
+	while true; do
+		# The trap only runs once a foreground command finishes, but 'wait'
+		# returns as soon as a signal arrives
+		sleep 5 & wait $!
+		if pgrep -x qbittorrent-nox >/dev/null; then
+			down_checks=0
+		elif (( ++down_checks >= 6 )); then
+			echo "[error] qBittorrent is no longer running, exiting..." | ts '%Y-%m-%d %H:%M:%.S'
+			show_qbittorrent_log
+			exit 1
+		fi
+	done
 else
 	echo "[error] qBittorrent failed to start!" | ts '%Y-%m-%d %H:%M:%.S'
-	if [[ -f /config/qBittorrent/data/logs/qbittorrent.log ]]; then
-		echo "[error] Last 20 lines of qBittorrent log:" | ts '%Y-%m-%d %H:%M:%.S'
-		tail -20 /config/qBittorrent/data/logs/qbittorrent.log
-	fi
+	show_qbittorrent_log
 	exit 1
 fi
